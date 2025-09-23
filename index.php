@@ -1,160 +1,85 @@
 <?php
-// Include helper class
 require_once 'EncryptionHelper.php';
-
-// Start session untuk pesan
 session_start();
 
-// Inisialisasi variabel
 $message = '';
 $messageType = '';
 $encryptedUrl = '';
 $decryptedData = '';
 $showDecryptForm = false;
-$formDataFromSession = null;
+$formData = $_SESSION['formData'] ?? null;
+unset($_SESSION['formData']);
 
-// Ambil pesan dari session jika ada
-if (isset($_SESSION['message'])) {
-    $message = $_SESSION['message'];
-    $messageType = $_SESSION['messageType'];
-    $formDataFromSession = $_SESSION['formData'] ?? null;
-    
-    // Hapus dari session setelah digunakan
-    unset($_SESSION['message']);
-    unset($_SESSION['messageType']);
-    unset($_SESSION['formData']);
-}
+$action = $_POST['action'] ?? null;
 
-// Handle form submission untuk enkripsi
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'encrypt') {
-    try {
-        // Validasi input
-        $nama = trim($_POST['nama'] ?? '');
-        $id = trim($_POST['id'] ?? '');
-        $telp = trim($_POST['telp'] ?? '');
-        
-        if (empty($nama) || empty($id) || empty($telp)) {
-            throw new Exception('Semua field harus diisi!');
-        }
-        
-        // Buat array data
-        $formData = [
-            'nama' => $nama,
-            'id' => $id,
-            'telp' => $telp
-        ];
-        
-        // Convert ke JSON
-        $jsonData = json_encode($formData, JSON_UNESCAPED_UNICODE);
-        
-        // Enkripsi data
-        $encrypted = EncryptionHelper::encryptData($jsonData);
-        
-        // Buat URL dan redirect
-        $currentUrl = $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
-        $baseUrl = strtok($currentUrl, '?'); // Hapus query string jika ada
-        $encryptedUrl = $baseUrl . '?data=' . $encrypted;
-        
-        // Set session untuk menampilkan pesan setelah redirect
-        session_start();
-        $_SESSION['message'] = 'Data berhasil dienkripsi dan URL telah dibuat!';
-        $_SESSION['messageType'] = 'success';
-        $_SESSION['formData'] = $formData; // Simpan data form untuk ditampilkan
-        
-        // Redirect ke URL dengan data terenkripsi
-        header('Location: ' . $encryptedUrl);
-        exit;
-        
-    } catch (Exception $e) {
-        $message = 'Error: ' . $e->getMessage();
-        $messageType = 'error';
+try {
+    switch ($action) {
+        case 'encrypt':
+            $nama = trim($_POST['nama'] ?? '');
+            $id = trim($_POST['id'] ?? '');
+            $telp = trim($_POST['telp'] ?? '');
+
+            if (!$nama || !$id || !$telp) {
+                throw new Exception('Semua field harus diisi!');
+            }
+
+            $formData = compact('nama', 'id', 'telp');
+            $jsonData = json_encode($formData, JSON_UNESCAPED_UNICODE);
+            $encrypted = EncryptionHelper::encryptData($jsonData);
+
+            $url = $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'] . strtok($_SERVER['REQUEST_URI'], '?');
+            $_SESSION['formData'] = $formData;
+            $_SESSION['message'] = 'Data berhasil dienkripsi dan URL telah dibuat!';
+            $_SESSION['messageType'] = 'success';
+
+            header("Location: {$url}?data={$encrypted}");
+            exit;
+
+        case 'decrypt_url':
+            $inputUrl = trim($_POST['url_input'] ?? '');
+            if (!$inputUrl) throw new Exception('Masukkan URL!');
+            if (!EncryptionHelper::isValidUrl($inputUrl)) throw new Exception('URL tidak valid!');
+
+            $encryptedData = EncryptionHelper::extractDataFromUrl($inputUrl);
+            if (!$encryptedData) throw new Exception('Data terenkripsi tidak ditemukan di URL.');
+
+            $decryptedJson = EncryptionHelper::decryptData($encryptedData);
+            $formData = json_decode($decryptedJson, true);
+            if (json_last_error() !== JSON_ERROR_NONE) throw new Exception('Data JSON tidak valid!');
+
+            $decryptedData = json_encode($formData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+            $message = 'Data berhasil didekripsi dari URL input!';
+            $messageType = 'success';
+            $showDecryptForm = true;
+            break;
+
+        case 'decrypt_current':
+            $encryptedData = $_GET['data'] ?? '';
+            if (!$encryptedData) throw new Exception('Tidak ada data terenkripsi di URL halaman.');
+
+            $decryptedJson = EncryptionHelper::decryptData($encryptedData);
+            $formData = json_decode($decryptedJson, true);
+            if (json_last_error() !== JSON_ERROR_NONE) throw new Exception('Data JSON tidak valid!');
+
+            $decryptedData = json_encode($formData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+            $message = 'Data berhasil didekripsi dari URL halaman ini!';
+            $messageType = 'success';
+            $showDecryptForm = true;
+            break;
     }
-}
-
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'decrypt_url') {
-    try {
-        $inputUrl = trim($_POST['url_input'] ?? '');
-        
-        if (empty($inputUrl)) {
-            throw new Exception('Masukkan URL yang akan didekripsi!');
-        }
-        
-        if (!EncryptionHelper::isValidUrl($inputUrl)) {
-            throw new Exception('URL tidak valid!');
-        }
-        
-        // Extract data dari URL
-        $encryptedData = EncryptionHelper::extractDataFromUrl($inputUrl);
-        
-        if (!$encryptedData) {
-            throw new Exception('URL tidak mengandung data terenkripsi!');
-        }
-        
-        // Dekripsi data
-        $decryptedJson = EncryptionHelper::decryptData($encryptedData);
-        $formData = json_decode($decryptedJson, true);
-        
-        if (json_last_error() !== JSON_ERROR_NONE) {
-            throw new Exception('Data JSON tidak valid!');
-        }
-        
-        $decryptedData = json_encode($formData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-        $message = 'Data berhasil didekripsi dari URL input!';
-        $messageType = 'success';
-        $showDecryptForm = true;
-        
-    } catch (Exception $e) {
-        $message = 'Error: ' . $e->getMessage();
-        $messageType = 'error';
-        $decryptedData = '';
-        $showDecryptForm = true;
-    }
-}
-
-// Handle dekripsi dari URL halaman saat ini
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'decrypt_current') {
-    try {
-        $encryptedData = $_GET['data'] ?? '';
-        
-        if (empty($encryptedData)) {
-            throw new Exception('URL halaman ini tidak mengandung data terenkripsi!');
-        }
-        
-        // Dekripsi data
-        $decryptedJson = EncryptionHelper::decryptData($encryptedData);
-        $formData = json_decode($decryptedJson, true);
-        
-        if (json_last_error() !== JSON_ERROR_NONE) {
-            throw new Exception('Data JSON tidak valid!');
-        }
-        
-        $decryptedData = json_encode($formData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-        $message = 'Data berhasil didekripsi dari URL halaman ini!';
-        $messageType = 'success';
-        $showDecryptForm = true;
-        
-    } catch (Exception $e) {
-        $message = 'Error: ' . $e->getMessage();
-        $messageType = 'error';
-        $decryptedData = '';
-        $showDecryptForm = true;
-    }
-}
-
-// Cek apakah ada data di URL saat halaman dimuat
-$hasDataInUrl = !empty($_GET['data']);
-if ($hasDataInUrl) {
+} catch (Exception $e) {
+    $message = 'Error: ' . $e->getMessage();
+    $messageType = 'error';
     $showDecryptForm = true;
-    if (empty($message)) {
-        $message = 'Data terenkripsi ditemukan di URL. Gunakan form dekripsi untuk melihat data.';
-        $messageType = 'info';
-    }
-    
-    // Jika ada data dari session (baru saja dienkripsi), tampilkan URL
-    if ($formDataFromSession) {
-        $currentUrl = $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
-        $encryptedUrl = $currentUrl;
+}
+
+$hasDataInUrl = !empty($_GET['data']);
+if ($hasDataInUrl && !$message) {
+    $message = 'Data terenkripsi ditemukan di URL. Gunakan form dekripsi untuk melihat data.';
+    $messageType = 'info';
+    $showDecryptForm = true;
+    if ($formData) {
+        $encryptedUrl = $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
     }
 }
 ?>
