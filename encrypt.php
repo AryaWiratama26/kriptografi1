@@ -58,11 +58,6 @@ if ($_POST['action'] ?? '' === 'encrypt') {
             <a href="index.php" class="nav-link">Home</a>
             <a href="encrypt.php" class="nav-link active">Enkripsi</a>
         </div>
-        
-        <div class="warning">
-            <strong>Catatan Keamanan:</strong> Data akan dienkripsi menggunakan AES-256-GCM dengan kunci random. 
-            URL yang dihasilkan mengandung kunci dekripsi, jadi bagikan dengan hati-hati kepada pihak yang berwenang.
-        </div>
 
         <?php if (!empty($message)): ?>
             <div class="message <?php echo $messageType; ?>">

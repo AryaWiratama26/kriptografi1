@@ -2,7 +2,6 @@
 class EncryptionHelper {
     
     /**
-     * Mengenkripsi data menggunakan AES-256-GCM
      * @param string $data Data yang akan dienkripsi
      * @return string Base64 URL-safe encoded encrypted data dengan key dan IV
      */

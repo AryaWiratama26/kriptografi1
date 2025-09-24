@@ -87,7 +87,7 @@ if ($hasDataInUrl && !$message) {
                        placeholder="https://example.com/decrypt.php?data=..." 
                        value="<?php echo htmlspecialchars($_POST['url_input'] ?? ''); ?>">
             </div>
-            <button type="submit">🔍 Dekripsi dari URL Input</button>
+            <button type="submit">Dekripsi dari URL Input</button>
         </form>
         
         <?php if ($hasDataInUrl): ?>
