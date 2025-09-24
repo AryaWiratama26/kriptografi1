@@ -104,3 +104,4 @@ class EncryptionHelper {
         return isset($queryParams['data']) ? $queryParams['data'] : null;
     }
 }
+?>
