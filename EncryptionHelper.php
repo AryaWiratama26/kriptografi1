@@ -6,13 +6,13 @@ class EncryptionHelper {
      * @return string Base64 URL-safe encoded encrypted data dengan key dan IV
      */
     public static function encryptData($data) {
-        // Generate random key (32 bytes untuk AES-256)
+        
         $key = random_bytes(32);
         
-        // Generate random IV (12 bytes untuk GCM)
+        
         $iv = random_bytes(12);
         
-        // Enkripsi data
+        
         $encrypted = openssl_encrypt(
             $data, 
             'aes-256-gcm', 
@@ -26,10 +26,10 @@ class EncryptionHelper {
             throw new Exception('Enkripsi gagal');
         }
         
-        // Gabungkan key + iv + tag + encrypted data
+        
         $result = $key . $iv . $tag . $encrypted;
         
-        // Return base64 URL-safe
+        
         return self::base64UrlEncode($result);
     }
     
@@ -39,18 +39,18 @@ class EncryptionHelper {
      * @return string Decrypted data
      */
     public static function decryptData($encryptedData) {
-        // Decode dari base64 URL-safe
+        
         $data = self::base64UrlDecode($encryptedData);
         
-        if (strlen($data) < 32 + 12 + 16) { // key + iv + tag minimum
+        if (strlen($data) < 32 + 12 + 16) { 
             throw new Exception('Data tidak valid - terlalu pendek');
         }
         
-        // Extract komponen
-        $key = substr($data, 0, 32);           // 32 bytes key
-        $iv = substr($data, 32, 12);           // 12 bytes IV
-        $tag = substr($data, 44, 16);          // 16 bytes tag
-        $encrypted = substr($data, 60);        // Sisa adalah encrypted data
+        
+        $key = substr($data, 0, 32);        
+        $iv = substr($data, 32, 12);         
+        $tag = substr($data, 44, 16);      
+        $encrypted = substr($data, 60);     
         
         // Dekripsi
         $decrypted = openssl_decrypt(

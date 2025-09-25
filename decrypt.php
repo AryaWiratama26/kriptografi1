@@ -65,11 +65,6 @@ if ($hasDataInUrl && !$message) {
     <div class="container">
         <h1>Form Dekripsi AES-256-GCM</h1>
         <p class="subtitle">Dekripsi data terenkripsi dari URL</p>
-        
-        <div class="warning">
-            <strong>Catatan Keamanan:</strong> Pastikan URL yang Anda masukkan berasal dari sumber terpercaya. 
-            Proses dekripsi akan menggunakan kunci yang terdapat dalam URL.
-        </div>
 
         <?php if (!empty($message)): ?>
             <div class="message <?php echo $messageType; ?>">
